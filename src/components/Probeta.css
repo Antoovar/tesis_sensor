@@ -1,0 +1,122 @@
+.probeta-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: scale(1.12);
+  transform-origin: center;
+  margin: 0;
+}
+
+.probeta-shell {
+  position: relative;
+  width: 140px;
+  height: 420px;
+}
+
+/* borde superior */
+.probeta-top {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42px;
+  height: 10px;
+  border: 2px solid #111827;
+  border-radius: 50%;
+  background: #dbeafe;
+  z-index: 4;
+}
+
+/* cuerpo de la probeta */
+.probeta-body {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42px;
+  height: 280px;
+  border-left: 2px solid #111827;
+  border-right: 2px solid #111827;
+  border-bottom: 2px solid #111827;
+  border-radius: 0 0 18px 18px;
+  background: rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+  z-index: 2;
+}
+
+/* máscara interna del agua */
+.agua-mask {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 6px;
+  bottom: 6px;
+  overflow: hidden;
+  border-radius: 0 0 14px 14px;
+}
+
+/* agua */
+.agua {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: linear-gradient(to top, #38bdf8, #7dd3fc);
+  transition: height 0.5s ease;
+}
+
+/* marcas de escala */
+.escala {
+  position: absolute;
+  top: 10px;
+  left: 6px;
+  right: 6px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.marca {
+  align-self: flex-start;
+  width: 16px;
+  height: 1.5px;
+  background: #111827;
+  opacity: 0.7;
+}
+
+/* anillo base */
+.probeta-base-ring {
+  position: absolute;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 66px;
+  height: 16px;
+  border: 2px solid #111827;
+  border-radius: 50%;
+  background: #e5e7eb;
+  z-index: 3;
+}
+
+/* pie */
+.probeta-base-foot {
+  position: absolute;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 92px;
+  height: 20px;
+  border: 2px solid #111827;
+  border-radius: 50%;
+  background: #f3f4f6;
+  z-index: 1;
+}
+
+.probeta-porcentaje {
+  margin-top: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
