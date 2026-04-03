@@ -756,8 +756,20 @@ select {
 }
 
 .grafico-filtro input[type="date"] {
-  cursor: pointer;
-  color-scheme: light;
-  background-color: #ffffff;
+  width: 170px;
+  min-width: 170px;
+  height: 42px;
+
+  padding: 10px 12px;
+
+  font-size: 14px;
   color: #1e293b;
+  background-color: #ffffff;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  color-scheme: light;
 }
