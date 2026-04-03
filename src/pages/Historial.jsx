@@ -7,6 +7,11 @@ import { db } from "../firebase/config";
 const DEVICE_ID = "esp32_01";
 const HISTORY_PATH = `devices/${DEVICE_ID}/history_full`;
 
+const HORAS_OPTIONS = Array.from({ length: 24 }, (_, i) => {
+    const hh = String(i).padStart(2, "0");
+    return hh;
+});
+
 function parseCustomTimestamp(timestamp) {
     if (!timestamp || typeof timestamp !== "string") return null;
 
@@ -41,6 +46,7 @@ function formatHora(timestamp) {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
+        hour12: false,
     });
 }
 
@@ -71,11 +77,11 @@ function descargarCSV(registros) {
     URL.revokeObjectURL(url);
 }
 
-function buildDateTime(fecha, hora, isEnd = false) {
-    if (!fecha) return null;
-
-    const horaFinal = hora || (isEnd ? "23:59:59" : "00:00:00");
-    return new Date(`${fecha}T${horaFinal}`);
+function getFechaKey(date) {
+    const anio = date.getFullYear();
+    const mes = String(date.getMonth() + 1).padStart(2, "0");
+    const dia = String(date.getDate()).padStart(2, "0");
+    return `${anio}-${mes}-${dia}`;
 }
 
 function Historial() {
@@ -136,14 +142,43 @@ function Historial() {
     }, []);
 
     const registrosFiltrados = useMemo(() => {
-        const desde = buildDateTime(fechaDesde, horaDesde, false);
-        const hasta = buildDateTime(fechaHasta, horaHasta, true);
-
         return todosLosRegistros.filter((item) => {
             const fechaItem = new Date(item.timestampMs);
+            const fechaItemKey = getFechaKey(fechaItem);
+            const horaItem = fechaItem.getHours();
 
-            if (desde && fechaItem < desde) return false;
-            if (hasta && fechaItem > hasta) return false;
+            // filtro por fecha
+            if (fechaDesde && fechaItemKey < fechaDesde) return false;
+            if (fechaHasta && fechaItemKey > fechaHasta) return false;
+
+            // si el registro cae justo en la fechaDesde, aplicar horaDesde
+            if (
+                fechaDesde &&
+                fechaItemKey === fechaDesde &&
+                horaDesde !== "" &&
+                horaItem < Number(horaDesde)
+            ) {
+                return false;
+            }
+
+            // si el registro cae justo en la fechaHasta, aplicar horaHasta
+            if (
+                fechaHasta &&
+                fechaItemKey === fechaHasta &&
+                horaHasta !== "" &&
+                horaItem > Number(horaHasta)
+            ) {
+                return false;
+            }
+
+            // si no pusieron fecha pero sí hora, filtrar por hora en todos los días
+            if (!fechaDesde && horaDesde !== "" && horaItem < Number(horaDesde)) {
+                return false;
+            }
+
+            if (!fechaHasta && horaHasta !== "" && horaItem > Number(horaHasta)) {
+                return false;
+            }
 
             return true;
         });
@@ -205,12 +240,18 @@ function Historial() {
 
                         <div className="filter-group">
                             <label htmlFor="hora-desde">Hora desde</label>
-                            <input
+                            <select
                                 id="hora-desde"
-                                type="time"
                                 value={horaDesde}
                                 onChange={(e) => setHoraDesde(e.target.value)}
-                            />
+                            >
+                                <option value="">Todas</option>
+                                {HORAS_OPTIONS.map((hora) => (
+                                    <option key={hora} value={hora}>
+                                        {hora}:00
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="filter-group">
@@ -236,12 +277,18 @@ function Historial() {
 
                         <div className="filter-group">
                             <label htmlFor="hora-hasta">Hora hasta</label>
-                            <input
+                            <select
                                 id="hora-hasta"
-                                type="time"
                                 value={horaHasta}
                                 onChange={(e) => setHoraHasta(e.target.value)}
-                            />
+                            >
+                                <option value="">Todas</option>
+                                {HORAS_OPTIONS.map((hora) => (
+                                    <option key={hora} value={hora}>
+                                        {hora}:00
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 

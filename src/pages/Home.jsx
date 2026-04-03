@@ -54,7 +54,7 @@ function Home() {
   let haceStr = "";
 
   const errores = {
-    0: "Sin error",
+    0: "Estado normal",
     1: "WiFi error",
     2: "SD error",
     3: "SD y WiFi error",

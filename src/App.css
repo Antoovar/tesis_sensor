@@ -695,3 +695,69 @@ header h1 {
   background: #fff;
   color: var(--text-dark);
 }
+
+select {
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.big {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.big .valor-num {
+  font-size: 45px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+
+.big .valor-unit {
+  font-size: 24px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1;
+}
+
+.grafico-filtros {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.grafico-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.grafico-filtro label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.grafico-filtro input,
+.grafico-filtro select {
+  background-color: #ffffff;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.grafico-filtro input[type="date"] {
+  cursor: pointer;
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #1e293b;
+}

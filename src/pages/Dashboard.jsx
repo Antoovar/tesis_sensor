@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { ref, onValue } from "firebase/database";
 import { db } from "../firebase/config";
 
@@ -30,7 +30,11 @@ function Dashboard() {
   const [latest, setLatest] = useState(null);
   const [historyChart, setHistoryChart] = useState([]);
   const [intervaloGrafico, setIntervaloGrafico] = useState(1);
+  const [fechaDesde, setFechaDesde] = useState("");
+  const [fechaHasta, setFechaHasta] = useState("");
 
+  const fechaDesdeRef = useRef(null);
+  const fechaHastaRef = useRef(null);
   const alturaMax = 500;
 
   function parseTimestamp(ts) {
@@ -45,12 +49,22 @@ function Dashboard() {
     return new Date(anio, mes - 1, dia, h, m, s);
   }
 
+  function parseInputDate(value, esFinDelDia = false) {
+    if (!value) return null;
+
+    const [anio, mes, dia] = value.split("-").map(Number);
+
+    if (esFinDelDia) {
+      return new Date(anio, mes - 1, dia, 23, 59, 59);
+    }
+
+    return new Date(anio, mes - 1, dia, 0, 0, 0);
+  }
   function normalizarAltura(valor) {
     const num = Number(valor);
 
     if (!Number.isFinite(num)) return null;
 
-    // descartamos valores absurdos
     if (num < 0 || num > alturaMax) return null;
 
     return num;
@@ -102,10 +116,26 @@ function Dashboard() {
   const historyChartFiltrado = useMemo(() => {
     if (!historyChart.length) return [];
 
-    const filtrados = [];
+    const desdeDate = parseInputDate(fechaDesde);
+    const hastaDate = parseInputDate(fechaHasta);
+
+    const filtradosPorFecha = historyChart.filter((item) => {
+      const fecha = parseTimestamp(item.timestamp);
+      if (!fecha) return false;
+
+      const altura = normalizarAltura(item.altura);
+      if (altura === null) return false;
+
+      if (desdeDate && fecha < desdeDate) return false;
+      if (hastaDate && fecha > hastaDate) return false;
+
+      return true;
+    });
+
+    const filtradosFinales = [];
     let ultimoTimestamp = null;
 
-    for (const item of historyChart) {
+    for (const item of filtradosPorFecha) {
       const fecha = parseTimestamp(item.timestamp);
       if (!fecha) continue;
 
@@ -118,7 +148,7 @@ function Dashboard() {
         ultimoTimestamp === null ||
         timestampMs - ultimoTimestamp >= intervaloGrafico * 1000
       ) {
-        filtrados.push({
+        filtradosFinales.push({
           ...item,
           alturaNormalizada: altura,
         });
@@ -126,8 +156,8 @@ function Dashboard() {
       }
     }
 
-    return filtrados;
-  }, [historyChart, intervaloGrafico]);
+    return filtradosFinales;
+  }, [historyChart, intervaloGrafico, fechaDesde, fechaHasta]);
 
   const chartLabels = historyChartFiltrado.map((item) => {
     return item.timestamp?.split(",")[1] || "";
@@ -202,7 +232,6 @@ function Dashboard() {
     <>
       <header>
         <h1>Dashboard</h1>
-
       </header>
 
       <section className="dashboard-cards">
@@ -230,21 +259,47 @@ function Dashboard() {
         <div className="grafico-header">
           <h3>Histórico de altura del depósito</h3>
 
-          <div className="grafico-filtro">
-            <label htmlFor="intervaloGrafico">Mostrar cada</label>
-            <select
-              id="intervaloGrafico"
-              value={intervaloGrafico}
-              onChange={(e) => setIntervaloGrafico(Number(e.target.value))}
-            >
-              <option value={1}>1 s</option>
-              <option value={30}>30 s</option>
-              <option value={60}>1 min</option>
-              <option value={900}>15 min</option>
-              <option value={1800}>30 min</option>
-              <option value={2700}>45 min</option>
-              <option value={3600}>1 hora</option>
-            </select>
+          <div className="grafico-filtros">
+            <div className="grafico-filtro">
+              <label htmlFor="fechaDesde">Desde</label>
+              <input
+                ref={fechaDesdeRef}
+                id="fechaDesde"
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                onClick={() => fechaDesdeRef.current?.showPicker?.()}
+              />
+            </div>
+
+            <div className="grafico-filtro">
+              <label htmlFor="fechaHasta">Hasta</label>
+              <input
+                ref={fechaHastaRef}
+                id="fechaHasta"
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                onClick={() => fechaHastaRef.current?.showPicker?.()}
+              />
+            </div>
+
+            <div className="grafico-filtro">
+              <label htmlFor="intervaloGrafico">Mostrar cada</label>
+              <select
+                id="intervaloGrafico"
+                value={intervaloGrafico}
+                onChange={(e) => setIntervaloGrafico(Number(e.target.value))}
+              >
+                <option value={1}>1 s</option>
+                <option value={30}>30 s</option>
+                <option value={60}>1 min</option>
+                <option value={900}>15 min</option>
+                <option value={1800}>30 min</option>
+                <option value={2700}>45 min</option>
+                <option value={3600}>1 hora</option>
+              </select>
+            </div>
           </div>
         </div>
 
