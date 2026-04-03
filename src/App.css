@@ -739,6 +739,10 @@ select {
   gap: 6px;
 }
 
+.grafico-filtro {
+  flex-shrink: 0;
+}
+
 .grafico-filtro label {
   font-size: 14px;
   font-weight: 600;
@@ -772,4 +776,10 @@ select {
   cursor: pointer;
 
   color-scheme: light;
+}
+
+@media (max-width: 600px) {
+  .grafico-filtro input[type="date"] {
+    width: 100%;
+  }
 }
