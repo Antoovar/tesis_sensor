@@ -27,14 +27,26 @@ ChartJS.register(
 );
 
 function Dashboard() {
+  const hoy = new Date();
+  const ayer = new Date();
+  ayer.setDate(hoy.getDate() - 1);
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const [latest, setLatest] = useState(null);
   const [historyChart, setHistoryChart] = useState([]);
   const [intervaloGrafico, setIntervaloGrafico] = useState(1);
-  const [fechaDesde, setFechaDesde] = useState("");
-  const [fechaHasta, setFechaHasta] = useState("");
+  const [fechaDesde, setFechaDesde] = useState(formatDate(ayer));
+  const [fechaHasta, setFechaHasta] = useState(formatDate(hoy));
 
   const fechaDesdeRef = useRef(null);
   const fechaHastaRef = useRef(null);
+
   const alturaMax = 500;
 
   function parseTimestamp(ts) {
@@ -55,16 +67,16 @@ function Dashboard() {
     const [anio, mes, dia] = value.split("-").map(Number);
 
     if (esFinDelDia) {
-      return new Date(anio, mes - 1, dia, 23, 59, 59);
+      return new Date(anio, mes - 1, dia, 23, 59, 59, 999);
     }
 
-    return new Date(anio, mes - 1, dia, 0, 0, 0);
+    return new Date(anio, mes - 1, dia, 0, 0, 0, 0);
   }
+
   function normalizarAltura(valor) {
     const num = Number(valor);
 
     if (!Number.isFinite(num)) return null;
-
     if (num < 0 || num > alturaMax) return null;
 
     return num;
@@ -108,16 +120,11 @@ function Dashboard() {
   const alturaActual = normalizarAltura(latest?.altura) ?? 0;
   const porcentaje = (alturaActual / alturaMax) * 100;
 
-  const fechaMedicion = parseTimestamp(latest?.timestamp);
-  const conectado = fechaMedicion
-    ? Date.now() - fechaMedicion.getTime() < 10000
-    : false;
-
   const historyChartFiltrado = useMemo(() => {
     if (!historyChart.length) return [];
 
-    const desdeDate = parseInputDate(fechaDesde);
-    const hastaDate = parseInputDate(fechaHasta);
+    const desdeDate = parseInputDate(fechaDesde, false);
+    const hastaDate = parseInputDate(fechaHasta, true);
 
     const filtradosPorFecha = historyChart.filter((item) => {
       const fecha = parseTimestamp(item.timestamp);
