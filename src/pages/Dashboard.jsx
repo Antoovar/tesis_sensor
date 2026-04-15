@@ -40,14 +40,44 @@ function Dashboard() {
 
   const [latest, setLatest] = useState(null);
   const [historyChart, setHistoryChart] = useState([]);
-  const [intervaloGrafico, setIntervaloGrafico] = useState(1);
+  const [intervaloGrafico, setIntervaloGrafico] = useState(60);
   const [fechaDesde, setFechaDesde] = useState(formatDate(ayer));
   const [fechaHasta, setFechaHasta] = useState(formatDate(hoy));
+  const [horaDesde, setHoraDesde] = useState("00:00");
+  const [horaHasta, setHoraHasta] = useState("23:59");
 
   const fechaDesdeRef = useRef(null);
   const fechaHastaRef = useRef(null);
 
   const alturaMax = 500;
+  const MAX_PUNTOS_GRAFICO = 90000;
+  const opcionesHora = [
+    "00:00",
+    "01:00",
+    "02:00",
+    "03:00",
+    "04:00",
+    "05:00",
+    "06:00",
+    "07:00",
+    "08:00",
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
+    "21:00",
+    "22:00",
+    "23:00",
+    "23:59",
+  ];
 
   function parseTimestamp(ts) {
     if (!ts) return null;
@@ -55,22 +85,30 @@ function Dashboard() {
     const [fecha, hora] = ts.split(",");
     if (!fecha || !hora) return null;
 
-    const [dia, mes, anio] = fecha.split("/");
-    const [h, m, s] = hora.split(":");
+    const [dia, mes, anio] = fecha.split("/").map(Number);
+    const [h, m, s] = hora.split(":").map(Number);
 
     return new Date(anio, mes - 1, dia, h, m, s);
   }
 
-  function parseInputDate(value, esFinDelDia = false) {
-    if (!value) return null;
+  function parseInputDateTime(fecha, hora, esFin = false) {
+    if (!fecha) return null;
 
-    const [anio, mes, dia] = value.split("-").map(Number);
+    const [anio, mes, dia] = fecha.split("-").map(Number);
 
-    if (esFinDelDia) {
-      return new Date(anio, mes - 1, dia, 23, 59, 59, 999);
+    if (!hora) {
+      return esFin
+        ? new Date(anio, mes - 1, dia, 23, 59, 59, 999)
+        : new Date(anio, mes - 1, dia, 0, 0, 0, 0);
     }
 
-    return new Date(anio, mes - 1, dia, 0, 0, 0, 0);
+    const [h, m] = hora.split(":").map(Number);
+
+    if (esFin) {
+      return new Date(anio, mes - 1, dia, h, m, 59, 999);
+    }
+
+    return new Date(anio, mes - 1, dia, h, m, 0, 0);
   }
 
   function normalizarAltura(valor) {
@@ -80,6 +118,38 @@ function Dashboard() {
     if (num < 0 || num > alturaMax) return null;
 
     return num;
+  }
+
+  function formatTimestampFromDate(fecha) {
+    const dd = String(fecha.getDate()).padStart(2, "0");
+    const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+    const yyyy = fecha.getFullYear();
+
+    const hh = String(fecha.getHours()).padStart(2, "0");
+    const min = String(fecha.getMinutes()).padStart(2, "0");
+    const ss = String(fecha.getSeconds()).padStart(2, "0");
+
+    return `${dd}/${mm}/${yyyy},${hh}:${min}:${ss}`;
+  }
+
+  function formatLabelFromDate(fecha) {
+    const dd = String(fecha.getDate()).padStart(2, "0");
+    const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+    const hh = String(fecha.getHours()).padStart(2, "0");
+    const min = String(fecha.getMinutes()).padStart(2, "0");
+    const ss = String(fecha.getSeconds()).padStart(2, "0");
+
+    const mismoDia = fechaDesde === fechaHasta;
+
+    if (intervaloGrafico >= 3600) {
+      return mismoDia ? `${hh}:00` : `${dd}/${mm} ${hh}:00`;
+    }
+
+    if (intervaloGrafico >= 60) {
+      return mismoDia ? `${hh}:${min}` : `${dd}/${mm} ${hh}:${min}`;
+    }
+
+    return mismoDia ? `${hh}:${min}:${ss}` : `${dd}/${mm} ${hh}:${min}:${ss}`;
   }
 
   useEffect(() => {
@@ -120,55 +190,101 @@ function Dashboard() {
   const alturaActual = normalizarAltura(latest?.altura) ?? 0;
   const porcentaje = (alturaActual / alturaMax) * 100;
 
+  const rangoSeleccionado = useMemo(() => {
+    const desdeDate = parseInputDateTime(fechaDesde, horaDesde, false);
+    const hastaDate = parseInputDateTime(fechaHasta, horaHasta, true);
+
+    if (!desdeDate || !hastaDate || desdeDate > hastaDate) {
+      return { desdeDate: null, hastaDate: null };
+    }
+
+    return { desdeDate, hastaDate };
+  }, [fechaDesde, fechaHasta, horaDesde, horaHasta]);
+
+  const demasiadosPuntos = useMemo(() => {
+    const { desdeDate, hastaDate } = rangoSeleccionado;
+    if (!desdeDate || !hastaDate) return false;
+
+    const intervaloMs = intervaloGrafico * 1000;
+
+    const inicioMs =
+      Math.floor(desdeDate.getTime() / intervaloMs) * intervaloMs;
+
+    const finMs =
+      Math.floor(hastaDate.getTime() / intervaloMs) * intervaloMs;
+
+    const cantidadPuntos =
+      Math.floor((finMs - inicioMs) / intervaloMs) + 1;
+
+    return cantidadPuntos > MAX_PUNTOS_GRAFICO;
+  }, [rangoSeleccionado, intervaloGrafico]);
+
   const historyChartFiltrado = useMemo(() => {
-    if (!historyChart.length) return [];
+    const { desdeDate, hastaDate } = rangoSeleccionado;
 
-    const desdeDate = parseInputDate(fechaDesde, false);
-    const hastaDate = parseInputDate(fechaHasta, true);
+    if (!desdeDate || !hastaDate) return [];
+    if (demasiadosPuntos) return [];
 
-    const filtradosPorFecha = historyChart.filter((item) => {
+    const intervaloMs = intervaloGrafico * 1000;
+
+    const filtradosPorRango = historyChart.filter((item) => {
       const fecha = parseTimestamp(item.timestamp);
       if (!fecha) return false;
 
       const altura = normalizarAltura(item.altura);
       if (altura === null) return false;
 
-      if (desdeDate && fecha < desdeDate) return false;
-      if (hastaDate && fecha > hastaDate) return false;
-
-      return true;
+      return fecha >= desdeDate && fecha <= hastaDate;
     });
 
-    const filtradosFinales = [];
-    let ultimoTimestamp = null;
+    const buckets = new Map();
 
-    for (const item of filtradosPorFecha) {
+    for (const item of filtradosPorRango) {
       const fecha = parseTimestamp(item.timestamp);
       if (!fecha) continue;
 
       const altura = normalizarAltura(item.altura);
       if (altura === null) continue;
 
-      const timestampMs = fecha.getTime();
+      const bucketMs =
+        Math.floor(fecha.getTime() / intervaloMs) * intervaloMs;
 
-      if (
-        ultimoTimestamp === null ||
-        timestampMs - ultimoTimestamp >= intervaloGrafico * 1000
-      ) {
-        filtradosFinales.push({
-          ...item,
-          alturaNormalizada: altura,
+      buckets.set(bucketMs, {
+        timestamp: formatTimestampFromDate(new Date(bucketMs)),
+        alturaNormalizada: Number(altura),
+      });
+    }
+
+    const inicioMs =
+      Math.floor(desdeDate.getTime() / intervaloMs) * intervaloMs;
+
+    const finMs =
+      Math.floor(hastaDate.getTime() / intervaloMs) * intervaloMs;
+
+    const resultado = [];
+
+    for (let t = inicioMs; t <= finMs; t += intervaloMs) {
+      if (buckets.has(t)) {
+        resultado.push(buckets.get(t));
+      } else {
+        resultado.push({
+          timestamp: formatTimestampFromDate(new Date(t)),
+          alturaNormalizada: null,
         });
-        ultimoTimestamp = timestampMs;
       }
     }
 
-    return filtradosFinales;
-  }, [historyChart, intervaloGrafico, fechaDesde, fechaHasta]);
+    return resultado;
+  }, [historyChart, rangoSeleccionado, intervaloGrafico, demasiadosPuntos]);
 
   const chartLabels = historyChartFiltrado.map((item) => {
-    return item.timestamp?.split(",")[1] || "";
+    const fecha = parseTimestamp(item.timestamp);
+    if (!fecha) return "";
+    return formatLabelFromDate(fecha);
   });
+  const cantidadPuntosValidos = historyChartFiltrado.filter(
+    (p) => p.alturaNormalizada !== null
+  ).length;
 
   const chartData = {
     labels: chartLabels,
@@ -180,9 +296,15 @@ function Dashboard() {
         backgroundColor: "rgba(56, 189, 248, 0.15)",
         borderWidth: 3,
         tension: 0.25,
-        fill: true,
-        pointRadius: intervaloGrafico === 1 ? 0 : 2,
-        pointHoverRadius: 4,
+        fill: false,
+        spanGaps: intervaloGrafico === 1 ? true : false,
+        pointRadius:
+          intervaloGrafico === 1
+            ? 2
+            : cantidadPuntosValidos <= 3
+              ? 5
+              : 2,
+        pointHoverRadius: intervaloGrafico === 1 ? 4 : 5,
       },
     ],
   };
@@ -190,6 +312,7 @@ function Dashboard() {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false,
     plugins: {
       legend: {
         display: false,
@@ -201,7 +324,10 @@ function Dashboard() {
             const index = tooltipItems[0].dataIndex;
             return historyChartFiltrado[index]?.timestamp || "";
           },
-          label: (tooltipItem) => `Altura: ${tooltipItem.raw} mm`,
+          label: (tooltipItem) => {
+            if (tooltipItem.raw === null) return "Sin medición";
+            return `Altura: ${tooltipItem.raw} mm`;
+          },
         },
       },
     },
@@ -220,7 +346,7 @@ function Dashboard() {
       x: {
         title: {
           display: true,
-          text: "Hora",
+          text: "Tiempo",
         },
         ticks: {
           autoSkip: true,
@@ -234,6 +360,24 @@ function Dashboard() {
       },
     },
   };
+
+  const metricasPeriodo = useMemo(() => {
+    const valores = historyChartFiltrado
+      .map((p) => p.alturaNormalizada)
+      .filter((v) => v !== null);
+
+    if (!valores.length) {
+      return { max: null, min: null, promedio: null };
+    }
+
+    return {
+      max: Math.max(...valores),
+      min: Math.min(...valores),
+      promedio: Math.round(
+        valores.reduce((acc, val) => acc + val, 0) / valores.length
+      ),
+    };
+  }, [historyChartFiltrado]);
 
   return (
     <>
@@ -253,6 +397,26 @@ function Dashboard() {
             unidad="mm"
           />
         </div>
+
+        {metricasPeriodo.max !== null && (
+          <div className="dashboard-card-wrap">
+            <SensorCard
+              titulo="Máx. del período"
+              valor={metricasPeriodo.max}
+              unidad="mm"
+            />
+          </div>
+        )}
+
+        {metricasPeriodo.min !== null && (
+          <div className="dashboard-card-wrap">
+            <SensorCard
+              titulo="Mín. del período"
+              valor={metricasPeriodo.min}
+              unidad="mm"
+            />
+          </div>
+        )}
       </section>
 
       <section className="dashboard-gauge-section">
@@ -280,6 +444,21 @@ function Dashboard() {
             </div>
 
             <div className="grafico-filtro">
+              <label htmlFor="horaDesde">Hora desde</label>
+              <select
+                id="horaDesde"
+                value={horaDesde}
+                onChange={(e) => setHoraDesde(e.target.value)}
+              >
+                {opcionesHora.map((hora) => (
+                  <option key={hora} value={hora}>
+                    {hora}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grafico-filtro">
               <label htmlFor="fechaHasta">Hasta</label>
               <input
                 ref={fechaHastaRef}
@@ -289,6 +468,21 @@ function Dashboard() {
                 onChange={(e) => setFechaHasta(e.target.value)}
                 onClick={() => fechaHastaRef.current?.showPicker?.()}
               />
+            </div>
+
+            <div className="grafico-filtro">
+              <label htmlFor="horaHasta">Hora hasta</label>
+              <select
+                id="horaHasta"
+                value={horaHasta}
+                onChange={(e) => setHoraHasta(e.target.value)}
+              >
+                {opcionesHora.map((hora) => (
+                  <option key={hora} value={hora}>
+                    {hora}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="grafico-filtro">
@@ -311,7 +505,44 @@ function Dashboard() {
         </div>
 
         <div style={{ height: "320px", marginTop: "20px" }}>
-          <Line data={chartData} options={chartOptions} />
+          {demasiadosPuntos ? (
+            <div
+              style={{
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                padding: "20px",
+                color: "#64748b",
+                border: "1px solid #e2e8f0",
+                borderRadius: "12px",
+                backgroundColor: "#f8fafc",
+              }}
+            >
+              El rango seleccionado genera demasiados puntos para mostrar.
+              Elegí un intervalo mayor o un rango de fechas/horas más corto.
+            </div>
+          ) : historyChartFiltrado.length === 0 ? (
+            <div
+              style={{
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                padding: "20px",
+                color: "#64748b",
+                border: "1px solid #e2e8f0",
+                borderRadius: "12px",
+                backgroundColor: "#f8fafc",
+              }}
+            >
+              No hay mediciones para el rango seleccionado.
+            </div>
+          ) : (
+            <Line data={chartData} options={chartOptions} />
+          )}
         </div>
       </section>
     </>
