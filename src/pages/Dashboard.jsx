@@ -401,7 +401,7 @@ function Dashboard() {
         <div className="dashboard-card-wrap">
           <SensorCard
             titulo="Altura actual"
-            valor={formatNumber(alturaActualMostrada, 2)}
+            valor={Math.round(alturaActualMostrada)}
             unidad="mm"
           />
         </div>
@@ -409,7 +409,7 @@ function Dashboard() {
         <div className="dashboard-card-wrap">
           <SensorCard
             titulo="Altura restante"
-            valor={formatNumber(alturaMax - alturaActualMostrada, 2)}
+            valor={Math.round(alturaMax - alturaActualMostrada)}
             unidad="mm"
           />
         </div>
