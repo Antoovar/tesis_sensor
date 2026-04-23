@@ -51,6 +51,7 @@ function Dashboard() {
 
   const alturaMax = 500;
   const MAX_PUNTOS_GRAFICO = 90000;
+
   const opcionesHora = [
     "00:00",
     "01:00",
@@ -118,6 +119,14 @@ function Dashboard() {
     if (num < 0 || num > alturaMax) return null;
 
     return num;
+  }
+
+  function formatNumber(value, decimals = 2) {
+    const num = Number(value);
+
+    if (!Number.isFinite(num)) return "0";
+
+    return num.toFixed(decimals);
   }
 
   function formatTimestampFromDate(fecha) {
@@ -392,7 +401,7 @@ function Dashboard() {
         <div className="dashboard-card-wrap">
           <SensorCard
             titulo="Altura actual"
-            valor={alturaActualMostrada}
+            valor={formatNumber(alturaActualMostrada, 2)}
             unidad="mm"
           />
         </div>
@@ -400,7 +409,7 @@ function Dashboard() {
         <div className="dashboard-card-wrap">
           <SensorCard
             titulo="Altura restante"
-            valor={alturaMax - alturaActualMostrada}
+            valor={formatNumber(alturaMax - alturaActualMostrada, 2)}
             unidad="mm"
           />
         </div>
@@ -409,7 +418,7 @@ function Dashboard() {
           <div className="dashboard-card-wrap">
             <SensorCard
               titulo="Máx. del período"
-              valor={metricasPeriodo.max}
+              valor={formatNumber(metricasPeriodo.max, 1)}
               unidad="mm"
             />
           </div>
@@ -419,7 +428,7 @@ function Dashboard() {
           <div className="dashboard-card-wrap">
             <SensorCard
               titulo="Mín. del período"
-              valor={metricasPeriodo.min}
+              valor={formatNumber(metricasPeriodo.min, 1)}
               unidad="mm"
             />
           </div>
