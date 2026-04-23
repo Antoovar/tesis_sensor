@@ -187,8 +187,10 @@ function Dashboard() {
     };
   }, []);
 
-  const alturaActual = normalizarAltura(latest?.altura) ?? 0;
-  const porcentaje = (alturaActual / alturaMax) * 100;
+  const alturaActualRaw = Number(latest?.altura);
+  const alturaActual = Number.isFinite(alturaActualRaw) ? alturaActualRaw : 0;
+  const alturaActualMostrada = Math.max(0, Math.min(alturaActual, alturaMax));
+  const porcentaje = (alturaActualMostrada / alturaMax) * 100;
 
   const rangoSeleccionado = useMemo(() => {
     const desdeDate = parseInputDateTime(fechaDesde, horaDesde, false);
@@ -282,6 +284,7 @@ function Dashboard() {
     if (!fecha) return "";
     return formatLabelFromDate(fecha);
   });
+
   const cantidadPuntosValidos = historyChartFiltrado.filter(
     (p) => p.alturaNormalizada !== null
   ).length;
@@ -387,13 +390,17 @@ function Dashboard() {
 
       <section className="dashboard-cards">
         <div className="dashboard-card-wrap">
-          <SensorCard titulo="Altura actual" valor={alturaActual} unidad="mm" />
+          <SensorCard
+            titulo="Altura actual"
+            valor={alturaActualMostrada}
+            unidad="mm"
+          />
         </div>
 
         <div className="dashboard-card-wrap">
           <SensorCard
             titulo="Altura restante"
-            valor={alturaMax - alturaActual}
+            valor={alturaMax - alturaActualMostrada}
             unidad="mm"
           />
         </div>
