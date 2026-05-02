@@ -508,7 +508,7 @@ function Dashboard() {
                 value={intervaloGrafico}
                 onChange={(e) => setIntervaloGrafico(Number(e.target.value))}
               >
-                <option value={1}>1 s</option>
+                <option value={5}>5 s</option>
                 <option value={30}>30 s</option>
                 <option value={60}>1 min</option>
                 <option value={900}>15 min</option>

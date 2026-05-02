@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "../App.css";
-import { Battery, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useLatest } from "../hooks/useLatest";
 import Probeta from "../components/Probeta";
 
@@ -14,6 +14,31 @@ function parseTimestamp(ts) {
   const [h, m, s] = hora.split(":");
 
   return new Date(anio, mes - 1, dia, h, m, s);
+}
+
+function BatteryLevel({ value }) {
+  const level = Number(value) || 0;
+
+  const bars = [25, 50, 75, 100];
+
+  return (
+    <div className="battery-drawing">
+      <div className="battery-tip" />
+
+      <div className="battery-body">
+        {bars.map((bar) => (
+          <div
+            key={bar}
+            className={`battery-bar ${
+              level >= bar ? "battery-bar-active" : "battery-bar-empty"
+            }`}
+          />
+        ))}
+      </div>
+
+      <p className="battery-percent">{level}%</p>
+    </div>
+  );
 }
 
 function Home() {
@@ -41,10 +66,10 @@ function Home() {
 
   const fechaStr = fechaMedicion
     ? fechaMedicion.toLocaleDateString("es-AR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
     : "Sin dato";
 
   const horaStr = fechaMedicion
@@ -112,12 +137,12 @@ function Home() {
             <div className="card-timeago">{haceStr}</div>
           </div>
 
-          <div className="data-card">
+          <div className="data-card battery-card">
             <div className="card-title">
-              <Battery size={18} />
               <span>Batería</span>
             </div>
-            <p className="card-value">{batteryPct}%</p>
+
+            <BatteryLevel value={batteryPct} />
           </div>
 
           <div className={`data-card ${errorCode !== 0 ? "error-card" : ""}`}>
